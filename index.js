@@ -1,8 +1,6 @@
 import { runLocalAnalysis, tokenize, extractControlFlow, buildStructuralTree, treeToIndentedString } from './engine/localEngine.js';
 
-/* -------------------------------
-   DOM Elements
---------------------------------*/
+
 const codeA = document.getElementById('codeA');
 const codeB = document.getElementById('codeB');
 const analyzeBtn = document.getElementById('analyzeBtn');
@@ -33,9 +31,7 @@ const treeTraceA = document.getElementById('treeTraceA');
 const treeCountB = document.getElementById('treeCountB');
 const treeTraceB = document.getElementById('treeTraceB');
 
-/* -------------------------------
-   Dashboard Renderer
---------------------------------*/
+
 const renderDashboard = (report) => {
   const getVerdictColor = (v) =>
     v === 'PLAGIARIZED'
@@ -150,11 +146,8 @@ const renderDashboard = (report) => {
   `;
 };
 
-/* -------------------------------
-   Token & Structure Trace
---------------------------------*/
+
 const renderTrace = (tokensA, tokensB) => {
-  // Tokens for Source A
   tokenCountA.innerText = `TOKENS: ${tokensA.length}`;
   tokenTraceA.innerHTML = tokensA
     .map((t) => {
@@ -167,7 +160,6 @@ const renderTrace = (tokensA, tokensB) => {
     })
     .join('');
 
-  // Tokens for Source B
   tokenCountB.innerText = `TOKENS: ${tokensB.length}`;
   tokenTraceB.innerHTML = tokensB
     .map((t) => {
@@ -180,38 +172,32 @@ const renderTrace = (tokensA, tokensB) => {
     })
     .join('');
 
-  // Structural markers (keywords + punctuation) for Source A
   const markersA = tokensA.filter((t) => t.type === 'KEYWORD' || t.type === 'PUNCTUATION');
   markerCountA.innerText = `MARKERS: ${markersA.length}`;
   structTraceA.innerHTML = markersA
     .map((t) => `<span class="${t.type === 'KEYWORD' ? 'text-primary font-black' : 'text-slate-600'}">${t.value}</span>`)
     .join(' ');
 
-  // Structural markers for Source B
   const markersB = tokensB.filter((t) => t.type === 'KEYWORD' || t.type === 'PUNCTUATION');
   markerCountB.innerText = `MARKERS: ${markersB.length}`;
   structTraceB.innerHTML = markersB
     .map((t) => `<span class="${t.type === 'KEYWORD' ? 'text-primary font-black' : 'text-slate-600'}">${t.value}</span>`)
     .join(' ');
 
-  // Control Flow Signature for Source A
   const flowA = extractControlFlow(tokensA);
   controlFlowA.innerText = flowA || '(no control keywords)';
   controlFlowCountA.innerText = `FLOW NODES: ${flowA ? flowA.split('>').length : 0}`;
 
-  // Control Flow Signature for Source B
   const flowB = extractControlFlow(tokensB);
   controlFlowB.innerText = flowB || '(no control keywords)';
   controlFlowCountB.innerText = `FLOW NODES: ${flowB ? flowB.split('>').length : 0}`;
 
-  // Structural Tree for Source A
   const treeA = buildStructuralTree(tokensA);
   const treeStringA = treeToIndentedString(treeA);
   const nodeCountA = countTreeNodes(treeA);
   treeCountA.innerText = `NODES: ${nodeCountA}`;
   treeTraceA.innerText = treeStringA;
 
-  // Structural Tree for Source B
   const treeB = buildStructuralTree(tokensB);
   const treeStringB = treeToIndentedString(treeB);
   const nodeCountB = countTreeNodes(treeB);

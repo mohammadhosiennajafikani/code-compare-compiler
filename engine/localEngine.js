@@ -13,7 +13,6 @@ const PUNCTUATION = /[()[\]{};,]/;
 const IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
 
 
-  //  Lexical Analysis (Scanner)
 
 export function tokenize(source) {
   const tokens = [];
@@ -45,10 +44,6 @@ export function tokenize(source) {
   return tokens;
 }
 
-/* -------------------------------
-   Structural Fingerprint
-   (Token Skeleton Approximation)
---------------------------------*/
 export function extractStructure(tokens) {
   return tokens
     .filter(t => t.type === 'KEYWORD' || t.type === 'PUNCTUATION')
@@ -56,10 +51,7 @@ export function extractStructure(tokens) {
     .join(' ');
 }
 
-/* -------------------------------
-   Control Flow Signature
-   (Keyword Path Heuristic)
---------------------------------*/
+
 export function extractControlFlow(tokens) {
   return tokens
     .filter(t =>
@@ -69,10 +61,7 @@ export function extractControlFlow(tokens) {
     .join('>');
 }
 
-/* -------------------------------
-   Structural Tree Approximation
-   (Block Delimiter Tree)
---------------------------------*/
+
 export function buildStructuralTree(tokens) {
   const tree = [];
   const stack = [tree];
@@ -88,12 +77,10 @@ export function buildStructuralTree(tokens) {
     const token = tokens[i];
     const currentLevel = stack[stack.length - 1];
     
-    // Track control keywords
     if (token.type === 'KEYWORD' && controlKeywords.has(token.value)) {
       lastControlKeyword = token.value;
     }
     
-    // Handle opening delimiters
     if (token.type === 'PUNCTUATION' && openDelimiters.has(token.value)) {
       const node = {
         type: 'block',
@@ -105,15 +92,12 @@ export function buildStructuralTree(tokens) {
       stack.push(node.children);
       lastControlKeyword = null;
     }
-    // Handle closing delimiters
     else if (token.type === 'PUNCTUATION' && closeDelimiters.has(token.value)) {
       if (stack.length > 1) {
         stack.pop();
       }
     }
-    // Handle control keywords at root level (not followed by block)
     else if (token.type === 'KEYWORD' && controlKeywords.has(token.value)) {
-      // Look ahead to see if next non-paren token is an opening brace
       let j = i + 1;
       let foundBrace = false;
       while (j < tokens.length && tokens[j].type === 'PUNCTUATION' && tokens[j].value !== '{') {
@@ -121,10 +105,8 @@ export function buildStructuralTree(tokens) {
         j++;
       }
       if (j < tokens.length && tokens[j].value === '{') {
-        // Will be handled when we hit the brace
         continue;
       }
-      // Control keyword without block - add as statement node
       currentLevel.push({
         type: 'statement',
         label: token.value
@@ -161,9 +143,7 @@ function getClosingDelimiter(open) {
   return pairs[open] || open;
 }
 
-/* -------------------------------
-   Similarity Utilities
---------------------------------*/
+
 function jaccardSimilarity(a, b) {
   const A = new Set(a);
   const B = new Set(b);
@@ -176,13 +156,10 @@ function scorePercent(val) {
   return Math.round(val * 100);
 }
 
-/* -------------------------------
-   Explanation Generator
---------------------------------*/
+
 function generateExplanation(verdict, lexScore, structScore, flowScore, overall) {
   const lines = [];
   
-  // Header based on verdict
   if (verdict === 'PLAGIARIZED') {
     lines.push('## Classification: PLAGIARIZED');
     lines.push('');
@@ -201,7 +178,6 @@ function generateExplanation(verdict, lexScore, structScore, flowScore, overall)
   lines.push('### Heuristic Analysis');
   lines.push('');
   
-  // Lexical analysis
   lines.push(`**Lexical Token Similarity: ${scorePercent(lexScore)}%**`);
   if (lexScore > 0.7) {
     lines.push('- High token overlap detected. The code shares significant lexical elements including identifiers, literals, and operators.');
@@ -212,7 +188,6 @@ function generateExplanation(verdict, lexScore, structScore, flowScore, overall)
   }
   lines.push('');
   
-  // Structural analysis
   lines.push(`**Structural Skeleton Similarity: ${scorePercent(structScore)}%**`);
   if (structScore > 0.7) {
     lines.push('- Keyword and punctuation patterns are highly congruent. Block structures and statement organization follow similar patterns.');
@@ -223,7 +198,6 @@ function generateExplanation(verdict, lexScore, structScore, flowScore, overall)
   }
   lines.push('');
   
-  // Control flow analysis
   lines.push(`**Control Flow Similarity: ${scorePercent(flowScore)}%**`);
   if (flowScore > 0.7) {
     lines.push('- Control keyword sequences exhibit strong correlation. Branching logic and iteration patterns are nearly identical.');
@@ -234,7 +208,6 @@ function generateExplanation(verdict, lexScore, structScore, flowScore, overall)
   }
   lines.push('');
   
-  // Weighted summary
   lines.push('### Weighted Aggregation');
   lines.push('');
   lines.push(`Final similarity score: **${scorePercent(overall)}%**`);
@@ -249,36 +222,29 @@ function generateExplanation(verdict, lexScore, structScore, flowScore, overall)
   return lines.join('\n');
 }
 
-/* -------------------------------
-   Main Analysis Engine
---------------------------------*/
+
 export function runLocalAnalysis(codeA, codeB) {
   const tokensA = tokenize(codeA);
   const tokensB = tokenize(codeB);
 
-  /* --- Phase 1: Lexical Similarity --- */
   const lexScore = jaccardSimilarity(
     tokensA.map(t => t.value),
     tokensB.map(t => t.value)
   );
 
-  /* --- Phase 2: Structural Approximation --- */
   const structA = extractStructure(tokensA).split(' ');
   const structB = extractStructure(tokensB).split(' ');
   const structScore = jaccardSimilarity(structA, structB);
 
-  /* --- Phase 3: Control Flow Heuristic --- */
   const flowA = extractControlFlow(tokensA).split('>');
   const flowB = extractControlFlow(tokensB).split('>');
   const flowScore = jaccardSimilarity(flowA, flowB);
 
-  /* --- Weighted Final Score --- */
   const overall =
     lexScore * 0.4 +
     structScore * 0.35 +
     flowScore * 0.25;
 
-  /* --- Verdict --- */
   let verdict = 'ORIGINAL';
   if (overall > 0.75) verdict = 'PLAGIARIZED';
   else if (overall > 0.45) verdict = 'SIMILAR';
